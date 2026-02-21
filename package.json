@@ -1,0 +1,42 @@
+{
+  "name": "stancer-node",
+  "version": "0.1.0",
+  "description": "Node.js / TypeScript client for the Stancer payment API",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "README.fr.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test:unit": "npx tsx --test tests/unit.test.ts",
+    "test:integration": "npx tsx --env-file=.env --test tests/integration.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/feelautom/stancer-node.git"
+  },
+  "homepage": "https://github.com/feelautom/stancer-node#readme",
+  "bugs": "https://github.com/feelautom/stancer-node/issues",
+  "keywords": [
+    "stancer",
+    "payment",
+    "api",
+    "typescript"
+  ]
+}
