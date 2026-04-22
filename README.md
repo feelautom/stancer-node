@@ -7,7 +7,7 @@ Node.js / TypeScript client for the [Stancer](https://www.stancer.com/) payment 
 - **Zero dependencies** — uses native `fetch` (Node 18+)
 - **Native TypeScript** — full types on all methods and responses
 - **ESM only**
-- **All resources** — payments, cards, SEPA, customers, refunds
+- **All resources** — payments, cards, SEPA, customers, refunds, disputes
 
 ## Installation
 
@@ -174,6 +174,37 @@ const refund = await stancer.refunds.retrieve('rfnd_xxxxxxxxxxxxxxxxxxxxxxxx');
 // List refunds
 const { refunds, range } = await stancer.refunds.list({ limit: 20 });
 ```
+
+---
+
+## Disputes
+
+Disputes (chargebacks) are read-only — they are initiated by banks and cannot be created or modified via the API.
+
+```typescript
+// Retrieve a dispute
+const dispute = await stancer.disputes.retrieve('dspt_xxxxxxxxxxxxxxxxxxxxxxxx');
+
+console.log(dispute.id);       // dspt_xxxxxxxxxxxxxxxxxxxxxxxx
+console.log(dispute.amount);   // 2990 (cents)
+console.log(dispute.currency); // 'eur'
+console.log(dispute.payment);  // 'paym_xxxxxxxxxxxxxxxxxxxxxxxx'
+console.log(dispute.response); // Bank response code (e.g. '45')
+
+// List disputes (recommended: run daily to detect chargebacks)
+const { disputes, range } = await stancer.disputes.list({
+  limit: 100,
+  created: Math.floor(Date.now() / 1000) - 7 * 24 * 3600, // last 7 days
+});
+
+// With date range
+const { disputes } = await stancer.disputes.list({
+  created: startTimestamp,
+  createdUntil: endTimestamp,
+});
+```
+
+When a payment is disputed, its `status` becomes `'disputed'`. Poll `/disputes` regularly since Stancer does not support webhooks.
 
 ---
 
@@ -384,8 +415,6 @@ async function reconcile(pendingPaymentIds: string[]) {
 
 **PaymentIntents V2** — `https://api.stancer.com/v2/` returns 404. The V2 API is not publicly accessible.
 
-**Disputes** — The `disputed` status exists in the API but no `/disputes/` endpoint is documented or exposed in any official SDK.
-
 ### Implemented but not testable in stest_ environment
 
 These methods are correctly implemented but the Stancer test environment (`stest_`) has limitations that prevent automated validation:
@@ -397,6 +426,7 @@ These methods are correctly implemented but the Stancer test environment (`stest
 | `customers.list()` | Same behavior |
 | `refunds.create()` / `payments.refund()` | Require a payment with `captured` status — in stest_, payments stay in `to_capture` (capture is processed asynchronously by Stancer) |
 | `refunds.retrieve()` | Requires an existing refund |
+| `disputes.list()` / `disputes.retrieve()` | Require a real disputed payment — not reproducible in stest_ |
 
 These features have been validated against the official SDK documentation (PHP, Python) and work correctly in production.
 

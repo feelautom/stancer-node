@@ -163,6 +163,26 @@ export interface CreateRefundParams {
 
 export type RefundListParams = ListParams;
 
+// ─── Dispute ──────────────────────────────────────────────────────────────────
+
+export interface Dispute {
+  id: string;
+  amount: number;
+  currency: Currency;
+  /** ID du paiement original */
+  payment: string;
+  /** Code réponse bancaire du litige (2–4 chars) */
+  response?: string;
+  orderId?: string | null;
+  liveMode: boolean;
+  created: number;
+}
+
+export interface DisputeListParams extends ListParams {
+  /** Timestamp Unix — filtre les disputes jusqu'à cette date */
+  createdUntil?: number;
+}
+
 // ─── Payment ─────────────────────────────────────────────────────────────────
 
 export interface Payment {
