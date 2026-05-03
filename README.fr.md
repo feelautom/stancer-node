@@ -1,5 +1,7 @@
 # stancer-node
 
+> **v0.3 — Support API V2 !** Nouveaux endpoints : adresses, vérification SEPA, mise à jour carte & SEPA, subscriptions & payment intents client. 100% rétrocompatible — le code V1 existant fonctionne sans modification.
+
 Client Node.js / TypeScript pour l'[API Stancer](https://www.stancer.com/documentation/), le payment provider français.
 
 - **Zéro dépendance** — utilise `fetch` natif (Node 18+)
