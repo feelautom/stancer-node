@@ -2,6 +2,7 @@ import { StancerClient, snakizeKeys, buildQueryString } from '../client.js';
 import type {
   Customer,
   PageInfo,
+  ListParams,
   CreateCustomerParams,
   UpdateCustomerParams,
   CustomerListParams,
@@ -46,5 +47,21 @@ export class CustomerResource {
 
   async delete(id: string): Promise<void> {
     await this.client.request<unknown>('DELETE', `/customers/${id}`);
+  }
+
+  async listPaymentIntents(id: string, params?: ListParams): Promise<unknown> {
+    const qs = buildQueryString({
+      limit: params?.limit,
+      start: params?.start,
+    });
+    return this.client.request<unknown>('GET', `/customers/${id}/payment_intents${qs}`);
+  }
+
+  async listSubscriptions(id: string, params?: ListParams): Promise<unknown> {
+    const qs = buildQueryString({
+      limit: params?.limit,
+      start: params?.start,
+    });
+    return this.client.request<unknown>('GET', `/customers/${id}/subscriptions${qs}`);
   }
 }

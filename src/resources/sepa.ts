@@ -1,5 +1,5 @@
 import { StancerClient, snakizeKeys, buildQueryString } from '../client.js';
-import type { Sepa, PageInfo, CreateSepaParams, SepaListParams } from '../types.js';
+import type { Sepa, SepaCheck, PageInfo, CreateSepaParams, UpdateSepaParams, CreateSepaCheckParams, SepaListParams } from '../types.js';
 
 export interface SepaListResponse {
   sepa: Sepa[];
@@ -15,6 +15,24 @@ export class SepaResource {
 
   retrieve(id: string): Promise<Sepa> {
     return this.client.request<Sepa>('GET', `/sepa/${id}`);
+  }
+
+  update(id: string, params: UpdateSepaParams): Promise<Sepa> {
+    return this.client.request<Sepa>(
+      'PATCH',
+      `/sepa/${id}`,
+      snakizeKeys(params) as Record<string, unknown>,
+    );
+  }
+
+  createCheck(params: CreateSepaCheckParams): Promise<SepaCheck> {
+    return this.client.request<SepaCheck>('POST', '/sepa/check/', {
+      sepa: params.sepa,
+    });
+  }
+
+  retrieveCheck(id: string): Promise<SepaCheck> {
+    return this.client.request<SepaCheck>('GET', `/sepa/check/${id}`);
   }
 
   async list(params?: SepaListParams): Promise<SepaListResponse> {

@@ -214,7 +214,47 @@ export interface Payment {
   created: number;
 }
 
-// ─── Params de création de carte ─────────────────────────────────────────────
+// ─── Address ─────────────────────���──────────────────────────────���───────────
+
+export interface Address {
+  id: string;
+  line1: string;
+  line2?: string | null;
+  city: string;
+  zipCode: string;
+  country: string;
+  state?: string | null;
+  customer?: string | null;
+  liveMode: boolean;
+  created: number;
+}
+
+export interface CreateAddressParams {
+  line1: string;
+  line2?: string;
+  city: string;
+  zipCode: string;
+  /** Code pays ISO 3166-1 alpha-2 (ex: 'FR', 'US') */
+  country: string;
+  state?: string;
+  customer?: string;
+}
+
+// ─── SepaCheck ─────────────────────��────────────────────────────────────────
+
+export interface SepaCheck {
+  id: string;
+  status: SepaCheckStatus;
+  sepa?: string;
+  created: number;
+}
+
+export interface CreateSepaCheckParams {
+  /** ID du compte SEPA à vérifier */
+  sepa: string;
+}
+
+// ─── Params de création de carte ────────────────���─────────────────────��──────
 
 export interface CardInput {
   /** Numéro de carte (16–19 chiffres, validation Luhn) */
@@ -233,6 +273,13 @@ export interface CardInput {
 
 export type CreateCardParams = CardInput;
 
+export interface UpdateCardParams {
+  name?: string;
+  zipCode?: string;
+  tokenize?: boolean;
+  externalId?: string;
+}
+
 // ─── Params de création de SEPA ──────────────────────────────────────────────
 
 export interface SepaInput {
@@ -248,6 +295,14 @@ export interface SepaInput {
 }
 
 export type CreateSepaParams = SepaInput;
+
+export interface UpdateSepaParams {
+  name?: string;
+  bic?: string;
+  mandate?: string;
+  dateMandate?: string;
+  dateBirth?: string;
+}
 
 // ─── Params de création de customer ──────────────────────────────────────────
 

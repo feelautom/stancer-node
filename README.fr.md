@@ -5,7 +5,8 @@ Client Node.js / TypeScript pour l'[API Stancer](https://www.stancer.com/documen
 - **Zéro dépendance** — utilise `fetch` natif (Node 18+)
 - **TypeScript natif** — types complets sur toutes les méthodes et réponses
 - **ESM uniquement**
-- **Toutes les ressources** — paiements, cartes, SEPA, customers, remboursements, disputes
+- **Toutes les ressources** — paiements, cartes, SEPA, customers, remboursements, disputes, adresses
+- **Support API V1 & V2** — rétrocompatible, choisissez votre version
 
 ## Installation
 
@@ -18,10 +19,26 @@ npm install stancer-node
 ```typescript
 import Stancer from 'stancer-node';
 
+// API V1 (défaut — rétrocompatible)
 const stancer = new Stancer({ apiKey: process.env.STANCER_SECRET_KEY! });
+
+// API V2 (nouveaux endpoints : adresses, vérification SEPA, mise à jour carte/sepa, etc.)
+const stancerV2 = new Stancer({
+  apiKey: process.env.STANCER_SECRET_KEY!,
+  apiVersion: 'v2',
+});
 ```
 
 La clé API est transmise via HTTP Basic Auth. Utilisez une clé `stest_` pour les tests, `sprod_` pour la production.
+
+### Versions de l'API
+
+| Version | URL de base | Notes |
+|---------|-------------|-------|
+| `v1` (défaut) | `https://api.stancer.com/v1` | Stable, toutes les fonctionnalités existantes |
+| `v2` | `https://api.stancer.com/v2` | Nouveau : adresses, vérification SEPA, PATCH carte/sepa, subscriptions & payment intents client |
+
+Toutes les fonctionnalités V1 marchent de manière identique en V2. L'option `apiVersion` ne change que le préfixe d'URL.
 
 ---
 
@@ -233,6 +250,16 @@ const payment = await stancer.payments.create({
 });
 ```
 
+### Mettre à jour une carte (V2)
+
+```typescript
+const updated = await stancer.cards.update('card_xxxxxxxxxxxxxxxxxxxxxxxx', {
+  name: 'Marie Dupont',
+  zipCode: '75001',
+  tokenize: true,
+});
+```
+
 ### Récupérer et lister des cartes
 
 ```typescript
@@ -272,6 +299,57 @@ const { sepa: list, range } = await stancer.sepa.list({ limit: 20 });
 await stancer.sepa.delete('sepa_xxxxxxxxxxxxxxxxxxxxxxxx');
 ```
 
+### Mettre à jour un compte SEPA (V2)
+
+```typescript
+const updated = await stancer.sepa.update('sepa_xxxxxxxxxxxxxxxxxxxxxxxx', {
+  name: 'Marie Dupont',
+  bic: 'BNPAFRPP',
+});
+```
+
+### Vérification SEPA (V2)
+
+Vérifier qu'un compte SEPA est valide et actif.
+
+```typescript
+// Lancer une vérification
+const check = await stancer.sepa.createCheck({ sepa: 'sepa_xxxxxxxxxxxxxxxxxxxxxxxx' });
+console.log(check.id);     // ID du check
+console.log(check.status); // 'sent' | 'checked' | 'error' | ...
+
+// Récupérer le statut plus tard
+const result = await stancer.sepa.retrieveCheck(check.id);
+console.log(result.status); // 'checked' quand terminé
+```
+
+---
+
+## Adresses (V2)
+
+Gestion des adresses de facturation/livraison (nécessite `apiVersion: 'v2'`).
+
+```typescript
+// Créer une adresse
+const address = await stancer.addresses.create({
+  line1: '42 rue de la Paix',
+  city: 'Paris',
+  zipCode: '75002',
+  country: 'FR',
+});
+
+console.log(address.id); // addr_xxxxxxxxxxxxxxxxxxxxxxxx
+
+// Récupérer
+const addr = await stancer.addresses.retrieve('addr_xxxxxxxxxxxxxxxxxxxxxxxx');
+
+// Lister
+const { addresses, range } = await stancer.addresses.list({ limit: 20 });
+
+// Supprimer
+await stancer.addresses.delete('addr_xxxxxxxxxxxxxxxxxxxxxxxx');
+```
+
 ---
 
 ## Customers
@@ -301,6 +379,22 @@ const { customers, range } = await stancer.customers.list({ limit: 20 });
 
 // Supprimer (soft delete)
 await stancer.customers.delete('cust_xxxxxxxxxxxxxxxxxxxxxxxx');
+```
+
+### Lister les payment intents d'un client (V2)
+
+```typescript
+const intents = await stancer.customers.listPaymentIntents('cust_xxxxxxxxxxxxxxxxxxxxxxxx', {
+  limit: 10,
+});
+```
+
+### Lister les subscriptions d'un client (V2)
+
+```typescript
+const subs = await stancer.customers.listSubscriptions('cust_xxxxxxxxxxxxxxxxxxxxxxxx', {
+  limit: 10,
+});
 ```
 
 ### Associer un customer à un paiement
@@ -423,8 +517,6 @@ async function reconcile(pendingPaymentIds: string[]) {
 ### Fonctionnalités non implémentées
 
 **`payments.cancel()`** — Aucun SDK officiel Stancer (PHP, Python, Perl) n'expose de méthode d'annulation explicite. L'API ne documente pas de endpoint `DELETE /checkout/{id}` ni de PATCH avec `status: 'canceled'`. Les statuts `canceled` et `expired` semblent être gérés uniquement côté serveur Stancer.
-
-**PaymentIntents V2** — L'URL `https://api.stancer.com/v2/` retourne 404. La V2 n'est pas accessible publiquement à ce jour.
 
 ### Méthodes implémentées, non testables en environnement stest_
 

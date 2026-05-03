@@ -1,6 +1,6 @@
 import { StancerError } from './errors.js';
 
-const BASE_URL = 'https://api.stancer.com/v1';
+export type ApiVersion = 'v1' | 'v2';
 
 // ─── Camelize keys ────────────────────────────────────────────────────────────
 
@@ -46,10 +46,12 @@ export function snakizeKeys(value: unknown): unknown {
 
 export class StancerClient {
   private readonly authHeader: string;
+  private readonly baseUrl: string;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, apiVersion: ApiVersion = 'v1') {
     if (!apiKey) throw new Error('apiKey is required');
     this.authHeader = `Basic ${btoa(`${apiKey}:`)}`;
+    this.baseUrl = `https://api.stancer.com/${apiVersion}`;
   }
 
   async request<T>(
@@ -57,7 +59,7 @@ export class StancerClient {
     path: string,
     body?: Record<string, unknown>,
   ): Promise<T> {
-    const url = `${BASE_URL}${path}`;
+    const url = `${this.baseUrl}${path}`;
     const headers: Record<string, string> = {
       Authorization: this.authHeader,
       'Content-Type': 'application/json',

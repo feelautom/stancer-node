@@ -7,7 +7,8 @@ Node.js / TypeScript client for the [Stancer](https://www.stancer.com/) payment 
 - **Zero dependencies** — uses native `fetch` (Node 18+)
 - **Native TypeScript** — full types on all methods and responses
 - **ESM only**
-- **All resources** — payments, cards, SEPA, customers, refunds, disputes
+- **All resources** — payments, cards, SEPA, customers, refunds, disputes, addresses
+- **API V1 & V2 support** — backward-compatible, choose your API version
 
 ## Installation
 
@@ -20,10 +21,26 @@ npm install stancer-node
 ```typescript
 import Stancer from 'stancer-node';
 
+// API V1 (default — backward compatible)
 const stancer = new Stancer({ apiKey: process.env.STANCER_SECRET_KEY! });
+
+// API V2 (new endpoints: addresses, SEPA check, card/sepa update, etc.)
+const stancerV2 = new Stancer({
+  apiKey: process.env.STANCER_SECRET_KEY!,
+  apiVersion: 'v2',
+});
 ```
 
 Use a `stest_` key for testing, `sprod_` for production.
+
+### API versions
+
+| Version | Base URL | Notes |
+|---------|----------|-------|
+| `v1` (default) | `https://api.stancer.com/v1` | Stable, all existing features |
+| `v2` | `https://api.stancer.com/v2` | New: addresses, SEPA check, card/sepa PATCH, customer subscriptions & payment intents |
+
+All v1 features work identically in v2. The `apiVersion` option only changes the URL prefix.
 
 ---
 
@@ -234,6 +251,16 @@ const payment = await stancer.payments.create({
 });
 ```
 
+### Update a card (V2)
+
+```typescript
+const updated = await stancer.cards.update('card_xxxxxxxxxxxxxxxxxxxxxxxx', {
+  name: 'Jane Doe',
+  zipCode: '75001',
+  tokenize: true,
+});
+```
+
 ### Retrieve and list cards
 
 ```typescript
@@ -267,6 +294,57 @@ const { sepa: list, range } = await stancer.sepa.list({ limit: 20 });
 await stancer.sepa.delete('sepa_xxxxxxxxxxxxxxxxxxxxxxxx');
 ```
 
+### Update a SEPA account (V2)
+
+```typescript
+const updated = await stancer.sepa.update('sepa_xxxxxxxxxxxxxxxxxxxxxxxx', {
+  name: 'Jane Doe',
+  bic: 'BNPAFRPP',
+});
+```
+
+### SEPA check (V2)
+
+Verify a SEPA account is valid and active.
+
+```typescript
+// Initiate a check
+const check = await stancer.sepa.createCheck({ sepa: 'sepa_xxxxxxxxxxxxxxxxxxxxxxxx' });
+console.log(check.id);     // check ID
+console.log(check.status); // 'sent' | 'checked' | 'error' | ...
+
+// Retrieve check status later
+const result = await stancer.sepa.retrieveCheck(check.id);
+console.log(result.status); // 'checked' when complete
+```
+
+---
+
+## Addresses (V2)
+
+Manage billing/shipping addresses (requires `apiVersion: 'v2'`).
+
+```typescript
+// Create an address
+const address = await stancer.addresses.create({
+  line1: '42 rue de la Paix',
+  city: 'Paris',
+  zipCode: '75002',
+  country: 'FR',
+});
+
+console.log(address.id); // addr_xxxxxxxxxxxxxxxxxxxxxxxx
+
+// Retrieve
+const addr = await stancer.addresses.retrieve('addr_xxxxxxxxxxxxxxxxxxxxxxxx');
+
+// List
+const { addresses, range } = await stancer.addresses.list({ limit: 20 });
+
+// Delete
+await stancer.addresses.delete('addr_xxxxxxxxxxxxxxxxxxxxxxxx');
+```
+
 ---
 
 ## Customers
@@ -292,6 +370,22 @@ const updated = await stancer.customers.update('cust_xxxxxxxxxxxxxxxxxxxxxxxx', 
 const { customers, range } = await stancer.customers.list({ limit: 20 });
 
 await stancer.customers.delete('cust_xxxxxxxxxxxxxxxxxxxxxxxx'); // soft delete
+```
+
+### List customer payment intents (V2)
+
+```typescript
+const intents = await stancer.customers.listPaymentIntents('cust_xxxxxxxxxxxxxxxxxxxxxxxx', {
+  limit: 10,
+});
+```
+
+### List customer subscriptions (V2)
+
+```typescript
+const subs = await stancer.customers.listSubscriptions('cust_xxxxxxxxxxxxxxxxxxxxxxxx', {
+  limit: 10,
+});
 ```
 
 ### Attach a customer to a payment
@@ -412,8 +506,6 @@ async function reconcile(pendingPaymentIds: string[]) {
 ### Not implemented
 
 **`payments.cancel()`** — No official Stancer SDK (PHP, Python, Perl) exposes an explicit cancel method. The API does not document a `DELETE /checkout/{id}` endpoint or a PATCH with `status: 'canceled'`. The `canceled` and `expired` statuses appear to be managed server-side by Stancer only.
-
-**PaymentIntents V2** — `https://api.stancer.com/v2/` returns 404. The V2 API is not publicly accessible.
 
 ### Implemented but not testable in stest_ environment
 

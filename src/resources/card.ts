@@ -1,5 +1,5 @@
 import { StancerClient, snakizeKeys, buildQueryString } from '../client.js';
-import type { Card, PageInfo, CreateCardParams, CardListParams } from '../types.js';
+import type { Card, PageInfo, CreateCardParams, UpdateCardParams, CardListParams } from '../types.js';
 
 export interface CardListResponse {
   cards: Card[];
@@ -15,6 +15,14 @@ export class CardResource {
 
   retrieve(id: string): Promise<Card> {
     return this.client.request<Card>('GET', `/cards/${id}`);
+  }
+
+  update(id: string, params: UpdateCardParams): Promise<Card> {
+    return this.client.request<Card>(
+      'PATCH',
+      `/cards/${id}`,
+      snakizeKeys(params) as Record<string, unknown>,
+    );
   }
 
   async list(params?: CardListParams): Promise<CardListResponse> {
